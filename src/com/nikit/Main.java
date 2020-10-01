@@ -28,7 +28,7 @@ class Transition{
 
     @Override
     public String toString() {
-        return "\n\tTransition={label=" + label + ", from=" + from + ", to=" + to + '}';
+        return "\n\tlabel:" + label + "\tfrom " + from + "\tto " + to;
     }
 }
 
@@ -114,6 +114,10 @@ class FiniteAutomation{
         }
     }
 
+    public void Minimize(){
+        Minimize(nodes.size());
+    }
+
     /** Минимизация детерминированного автомата */
     public void Minimize(int s){
         // На вход поступает только детерминированный автомат, а он полный, поэтому можно узнать число меток перходов:
@@ -128,7 +132,7 @@ class FiniteAutomation{
         for (Transition t: trans){
             t.from.idx.set(Integer.parseInt(t.label), t.to.get(0).fin?1:0);
         }
-        //TODO  //----- Убрать все одинаковые строки -----//
+
         for (int i=0;i<nodes.size();i++){
             for (int j=i+1;j<nodes.size();j++){
                 // Если ноды соеражт одинаковые переходы
@@ -138,14 +142,29 @@ class FiniteAutomation{
                         if (trans.get(t).from == nodes.get(j)){
                             trans.remove(t);
                             t--;
+                            continue;
+                        }
+                        // А все переходы в эту ноду заменяем переходами в подобную
+                        if (trans.get(t).to.get(0) == nodes.get(j)){
+                            trans.get(t).to.remove(nodes.get(j));
+                            trans.get(t).to.add(nodes.get(i));
+                            t--;
                         }
                     }
-                    nodes.remove(i);
-                    i--;
+                    nodes.remove(j);
+                    j--;
                 }
             }
         }
+        System.out.println("Ноды и переходы в процессе минимизации");
         System.out.println(nodes);
+        System.out.println(trans);
+        if (nodes.size()<s){
+            Minimize(nodes.size());
+        }
+        else{
+            System.out.println("Конец минимизации");
+        }
     }
 
 
@@ -362,8 +381,8 @@ class FiniteAutomation{
                             t--;
                         }
                     }
-                    newNodes.remove(i);
-                    i--;
+                    newNodes.remove(j);
+                    j--;
                 }
             }
         }
@@ -380,7 +399,7 @@ class FiniteAutomation{
 
 class Main extends JFrame {
     JPanel top, middle1, middle2, bottom;
-    JButton confirm1, confirm2;
+    JButton confirm1, determ, minim;
     JFormattedTextField rows, cols;
     int r, c;
     JPanel[] pans;
@@ -390,6 +409,7 @@ class Main extends JFrame {
 
     public static void main(String[] args){
         new Main();
+        System.out.println((char)('A'+2));
     }
 
     void FillTheTable(int rows, int cols){
@@ -413,7 +433,6 @@ class Main extends JFrame {
             for (int j=1;j<cols+3;j++){
                 flds[(i-1)*(cols+2)+j-1] = new JFormattedTextField();
                 flds[(i-1)*(cols+2)+j-1].setPreferredSize(new Dimension(50, 20));
-                //flds[(i-1)*(cols+2)+j-1].setText(valueOf((i-1)*(cols+2)+j-1));
                 pans[i*(cols+3)+j].add(flds[(i-1)*(cols+2)+j-1]);
             }
         }
@@ -455,8 +474,10 @@ class Main extends JFrame {
                 c = Integer.parseInt(cols.getText());
                 middle1.setVisible(false);
                 middle1.setEnabled(false);
-                confirm2.setVisible(true);
-                confirm2.setEnabled(true);
+                minim.setVisible(true);
+                minim.setEnabled(true);
+                determ.setVisible(true);
+                determ.setEnabled(true);
                 FillTheTable(r, c);
                 remove(top);
                 System.out.println("Well done");
@@ -470,13 +491,54 @@ class Main extends JFrame {
         info = new JLabel("Если несколько переходов с одной меткой, вводите их через пробел");
         info.setVisible(false);
         middle2.add(info);
-        confirm2 = new JButton();
-        confirm2.setText("Подтвердить");
-        confirm2.setHorizontalAlignment(JButton.CENTER);
-        confirm2.setVerticalAlignment(JButton.CENTER);
-        confirm2.setVisible(false);
-        confirm2.setEnabled(false);
-        confirm2.addActionListener(new ActionListener() {
+        determ = new JButton();
+        determ.setText("Детерминировать");
+        determ.setHorizontalAlignment(JButton.CENTER);
+        determ.setVerticalAlignment(JButton.CENTER);
+        determ.setVisible(false);
+        determ.setEnabled(false);
+        determ.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                LinkedList<Node> n = new LinkedList<>();
+                Node temp;
+                for (int i=0;i<r;i++){
+                    temp = new Node(valueOf(i));
+                    temp.fin = flds[(c+2)*i].getText().equals("1");
+                    System.out.println();
+                    n.add(temp);
+                }
+                LinkedList<Transition> tr = new LinkedList<>();
+                String t;
+                for (int i=0;i<r;i++) {
+                    for (int j = 1; j < c+2; j++) {
+                        t = flds[i * (c + 2) + j].getText();
+                        if (!t.equals("")){
+                            for (String s : t.split(" ")) {
+                                if (j!=c+1){
+                                    tr.add(new Transition(valueOf((char)('A'+j-1)), n.get(i), n.get(Integer.parseInt(s))));
+                                }
+                                else{
+                                    tr.add(new Transition("", n.get(i), n.get(Integer.parseInt(s))));
+                                }
+                            }
+                        }
+                    }
+                }
+
+                FiniteAutomation FA = new FiniteAutomation(n, tr);
+                FA.ToDetermined();
+            }
+        });
+        middle2.add(determ);
+
+        minim = new JButton();
+        minim.setText("Минимизировать");
+        minim.setHorizontalAlignment(JButton.CENTER);
+        minim.setVerticalAlignment(JButton.CENTER);
+        minim.setVisible(false);
+        minim.setEnabled(false);
+        minim.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 LinkedList<Node> n = new LinkedList<>();
@@ -500,18 +562,15 @@ class Main extends JFrame {
                                 else{
                                     tr.add(new Transition("", n.get(i), n.get(Integer.parseInt(s))));
                                 }
-                                System.out.println(tr.getLast());
                             }
                         }
                     }
                 }
-
                 FiniteAutomation FA = new FiniteAutomation(n, tr);
-                FA.Minimize(10);
-                FA.ToDetermined();
+                FA.Minimize();
             }
         });
-        middle2.add(confirm2);
+        middle2.add(minim);
         middle2.setPreferredSize(new Dimension(600, 100));
         add(middle2);
         bottom = new JPanel();
