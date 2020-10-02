@@ -114,23 +114,39 @@ class FiniteAutomation{
         }
     }
 
+    public Node get(Node n, String label){
+        for (Transition tr: trans){
+            if (tr.from == n && tr.label.equals(label)){
+                return tr.to.get(0);
+            }
+        }
+        return null;
+    }
+
     public void Minimize(){
         Minimize(nodes.size());
     }
 
     /** Минимизация детерминированного автомата */
     public void Minimize(int s){
-        // На вход поступает только детерминированный автомат, а он полный, поэтому можно узнать число меток перходов:
-        int count = (int)(trans.size()/(float)nodes.size());
+
+        // Чтобы можно было любые метки использовать
+        LinkedList<String> labels = new LinkedList<>();
+        for (Transition t: trans){
+            if (!labels.contains(t.label)){
+                labels.add(t.label);
+            }
+        }
         for (Node n: nodes){ // Обнуляем индексы, в них будем записывать всю информацию о сокращениях
             n.idx = new MyList<>();
-            for (int i=0;i<count;i++){
+            for (int i=0;i<labels.size();i++){
                 n.idx.add(0);
             }
         }
 
+
         for (Transition t: trans){
-            t.from.idx.set(Integer.parseInt(t.label), t.to.get(0).fin?1:0);
+            t.from.idx.set(labels.indexOf(t.label), t.to.get(0).fin?1:0);
         }
 
         for (int i=0;i<nodes.size();i++){
@@ -393,6 +409,7 @@ class FiniteAutomation{
         System.out.println(trans);
         System.out.println("Ноды в конце:");
         System.out.println(nodes);
+        Minimize();
 
     }
 }
@@ -528,6 +545,8 @@ class Main extends JFrame {
 
                 FiniteAutomation FA = new FiniteAutomation(n, tr);
                 FA.ToDetermined();
+                newFrame fr = new newFrame();
+                fr.print_automaton(FA);
             }
         });
         middle2.add(determ);
@@ -568,6 +587,8 @@ class Main extends JFrame {
                 }
                 FiniteAutomation FA = new FiniteAutomation(n, tr);
                 FA.Minimize();
+                newFrame fr = new newFrame();
+                fr.print_automaton(FA);
             }
         });
         middle2.add(minim);
@@ -577,5 +598,51 @@ class Main extends JFrame {
         bottom.setPreferredSize(new Dimension(600, 600));
         setVisible(true);
     }
+
 }
 
+class newFrame extends JFrame{
+    JLabel[] flds;
+    void print_automaton(FiniteAutomation FA){
+        int rows, cols;
+        setSize(600, 700);
+        LinkedList<Node> nodes = FA.nodes;
+        LinkedList<Transition> tr = FA.trans;
+        LinkedList<String> labels = new LinkedList<>();
+        for (Transition t: tr){
+            if (!labels.contains(t.label)){
+                labels.add(t.label);
+            }
+        }
+        rows = nodes.size()+1;
+        cols = labels.size()+2;
+        System.out.println(rows + " " + cols);
+        flds = new JLabel[rows*cols];
+
+        setLayout(new GridLayout(rows, cols));
+        for (int i=0;i<flds.length;i++){
+            flds[i] = new JLabel();
+        }
+        flds[0].setText("Q");
+        flds[1].setText("F");
+        for (int i=2;i<cols;i++){
+            flds[i].setText("" + (i-2));
+        }
+        Node temp;
+
+        for (int i=1;i<rows;i++){
+            flds[i*cols].setText("" + nodes.get(i-1).name);
+            flds[i*cols+1].setText("" + (nodes.get(i-1).fin?1:0));
+            for (int j=2;j<cols;j++){
+                flds[i*cols+j] = new JLabel();
+                flds[i*cols+j].setPreferredSize(new Dimension(50, 20));
+                temp = FA.get(nodes.get(i-1), labels.get(j-2));
+                flds[i*cols+j].setText(temp!=null?temp.name:"0");
+            }
+        }
+        for (JLabel lb : flds) {
+            add(lb);
+        }
+        setVisible(true);
+    }
+}
