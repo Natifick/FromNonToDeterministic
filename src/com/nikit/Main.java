@@ -321,10 +321,6 @@ class FiniteAutomation{
                 }
             }
         }
-        System.out.println("Переходы в конце:");
-        System.out.println(newTrans);
-        System.out.println("Ноды в конце:");
-        System.out.println(newNodes);
 
         for (int i=0;i<newNodes.size();i++){
             newNodes.get(i).name = valueOf(i); // Присваиваем им равное индексу
@@ -335,6 +331,12 @@ class FiniteAutomation{
                 }
             }
         }
+
+        System.out.println("Переходы без вычеркнутых лишних строк:");
+        System.out.println(newTrans);
+        System.out.println("Ноды без вычеркнутых лишних:");
+        System.out.println(newNodes);
+
         for (Node newNode : newNodes) {
             // Пытаемся также заменить такую же ноду в переходах на эту ноду (создаём ссылки)
             for (Transition t : newTrans) {
@@ -378,11 +380,17 @@ class FiniteAutomation{
                 }
             }
         }
+
+        System.out.println("Переходы прямо перед вычёркиванием:");
+        System.out.println(newTrans);
+        System.out.println("Ноды прямо перед вычёркиванием:");
+        System.out.println(newNodes);
+
         for (int i=0;i<newNodes.size();i++){
             for (int j=i+1;j<newNodes.size();j++){
                 // Если ноды соеражт одинаковые переходы
                 if (newNodes.get(i).idx.containsAll(newNodes.get(j).idx) &&
-                        newNodes.get(j).idx.containsAll(newNodes.get(i).idx)){
+                        newNodes.get(j).idx.containsAll(newNodes.get(i).idx) && newNodes.get(j).fin == newNodes.get(i).fin){
                     for (int t=0;t<newTrans.size();t++){
                         // То все переходы из этой ноды мы просто удаляем
                         if (newTrans.get(t).from == newNodes.get(j)){
@@ -409,7 +417,7 @@ class FiniteAutomation{
         System.out.println(trans);
         System.out.println("Ноды в конце:");
         System.out.println(nodes);
-        Minimize();
+        //Minimize();
 
     }
 }
@@ -637,7 +645,7 @@ class newFrame extends JFrame{
                 flds[i*cols+j] = new JLabel();
                 flds[i*cols+j].setPreferredSize(new Dimension(50, 20));
                 temp = FA.get(nodes.get(i-1), labels.get(j-2));
-                flds[i*cols+j].setText(temp!=null?temp.name:"0");
+                flds[i*cols+j].setText(temp!=null?temp.name:"-1");
             }
         }
         for (JLabel lb : flds) {
