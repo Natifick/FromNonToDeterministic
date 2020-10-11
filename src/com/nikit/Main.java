@@ -4,9 +4,11 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.BufferedInputStream;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedList;
+import java.util.Scanner;
 
 import static java.lang.String.valueOf;
 
@@ -388,7 +390,7 @@ class FiniteAutomation{
 
         for (int i=0;i<newNodes.size();i++){
             for (int j=i+1;j<newNodes.size();j++){
-                // Если ноды соеражт одинаковые переходы
+                // Если ноды содержат одинаковые переходы
                 if (newNodes.get(i).idx.containsAll(newNodes.get(j).idx) &&
                         newNodes.get(j).idx.containsAll(newNodes.get(i).idx) && newNodes.get(j).fin == newNodes.get(i).fin){
                     for (int t=0;t<newTrans.size();t++){
@@ -418,10 +420,126 @@ class FiniteAutomation{
         System.out.println("Ноды в конце:");
         System.out.println(nodes);
         //Minimize();
-
     }
 }
 
+class Token{
+    boolean terminal = false;
+    String name;
+    public Token(boolean terminal, String name) {
+        this.terminal = terminal;
+        this.name = name;
+    }
+    public Token(String name){
+        this.name = name;
+    }
+
+    @Override
+    public String toString() {
+        return "Token{" +
+                "terminal=" + terminal +
+                ", name='" + name + '\'' +
+                '}';
+    }
+}
+
+class Tokenizer{
+    public static LinkedList<Token> tokenize(String input){
+        StringBuilder t = new StringBuilder();
+        LinkedList<Token> output = new LinkedList<>();
+        boolean terminal = false;
+        for (char c: input.toCharArray()){
+            // Общие правила к именам - только латиница, цифры и '_'
+            boolean b = (c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z' || c >= '0' && c <= '9' || c == '_');
+            if (t.length() != 0) {
+                if (b) {
+                    if (terminal) {
+                        output.add(new Token(true, t.toString()));
+                        terminal = false;
+                        t = new StringBuilder();
+                    }
+                } else {
+                    if (!terminal) {
+                        output.add(new Token(t.toString()));
+                        terminal = true;
+                        t = new StringBuilder();
+                    }
+                }
+            }
+            if (c != ' '){
+                terminal = !(b);
+                t.append(c);
+            }
+        }
+        if (t.length() != 0){
+            output.add(new Token(terminal, t.toString()));
+        }
+        System.out.println("Токены для строки:\t" + output);
+        return output;
+    }
+}
+/*
+To test it:
+S ::= A;
+A ::= E
+A ::= +E
+A ::= A+E
+A ::= A*E
+E ::= id
+E ::= (A)
+exit
+*/
+class Main{
+    static LinkedList<Node> nodes;
+    static LinkedList<Transition> trans;
+    public static void main(String[] args){
+        Scanner sc = new Scanner(System.in);
+        LinkedList<String> names = new LinkedList<>();
+        LinkedList<LinkedList<Token>> temporal = new LinkedList<>(); // Храним для последующего развёртывания
+        while (sc.hasNextLine()){
+            String[] temp = sc.nextLine().split(" ::= ");
+            if (temp[0].equals("exit")){
+                break;
+            }
+            if (!names.contains(temp[0])){
+                names.add(temp[0]);
+            }
+            temporal.add(Tokenizer.tokenize(temp[1]));
+            for (Token i: temporal.getLast()){ // Исследуем правую часть
+                if (!i.terminal && !names.contains(i.name)){ // Если ещё не встречали символ справа
+                    names.add(i.name);
+                }
+            }
+        }
+        nodes = new LinkedList<>();
+        trans = new LinkedList<>();
+        String label = "";
+        for (int i=0;i<temporal.size();i++){
+            label = "";
+            int cnt = 0;
+            for (int j=0;j<temporal.get(i).size();j++){
+                if (temporal.get(i).get(j).terminal){
+                    label = temporal.get(i).get(j).name;
+                }
+                else{
+                    trans.add(new Transition(label, new Node(valueOf(cnt) + "," + valueOf(i)), new Node(valueOf(++cnt) + "," + valueOf(i))));
+                }
+            }
+        }
+        for (Transition t: trans){
+            nodes.add(t.from);
+            nodes.addAll(t.to);
+        }
+        System.out.println(trans);
+        System.out.println(nodes);
+
+        newFrame f = new newFrame();
+        f.print_automaton(new FiniteAutomation(nodes, trans));
+    }
+}
+
+
+/*
 class Main extends JFrame {
     JPanel top, middle1, middle2, bottom;
     JButton confirm1, determ, minim;
@@ -608,9 +726,11 @@ class Main extends JFrame {
     }
 
 }
+ */
 
 class newFrame extends JFrame{
     JLabel[] flds;
+    final String REPLACE_VALUE = "";
     void print_automaton(FiniteAutomation FA){
         int rows, cols;
         setSize(600, 700);
@@ -634,7 +754,7 @@ class newFrame extends JFrame{
         flds[0].setText("Q");
         flds[1].setText("F");
         for (int i=2;i<cols;i++){
-            flds[i].setText("" + (i-2));
+            flds[i].setText("" + labels.get(i-2));
         }
         Node temp;
 
@@ -645,7 +765,7 @@ class newFrame extends JFrame{
                 flds[i*cols+j] = new JLabel();
                 flds[i*cols+j].setPreferredSize(new Dimension(50, 20));
                 temp = FA.get(nodes.get(i-1), labels.get(j-2));
-                flds[i*cols+j].setText(temp!=null?temp.name:"-1");
+                flds[i*cols+j].setText(temp!=null?temp.name:REPLACE_VALUE);
             }
         }
         for (JLabel lb : flds) {
