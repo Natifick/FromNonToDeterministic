@@ -2,13 +2,7 @@ package com.nikit;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.io.BufferedInputStream;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.Scanner;
+import java.util.*;
 
 import static java.lang.String.valueOf;
 
@@ -96,6 +90,7 @@ class FiniteAutomation{
     LinkedList<Transition> trans;
     LinkedList<Node> nodes;
 
+    /** Ввод автомата  */
     public FiniteAutomation(LinkedList<Node> n, LinkedList<Transition> tr){
         trans = new LinkedList<>();
         nodes = n;
@@ -110,15 +105,34 @@ class FiniteAutomation{
                     tran.add(transition.to);
                 }
             }
+            // Если у какой-то ноды такое же имя, как и в переходе,
+            // То заменяем ноду в переходе на ссылку на эту ноду.
+            // То есть делаем граф связанным через ссылки
+            for (Node node: nodes){
+                if (transition.from.name.equals(node.name)){
+                    transition.from = node;
+                }
+                for (Node n2: transition.to){
+                    if (node.name.equals(n2.name)){
+                        transition.to.remove(n2);
+                        transition.to.add(node);
+                    }
+                }
+            }
             if (!fl) {
                 trans.add(transition);
             }
         }
+
+        System.out.println("Переходы:");
+        System.out.println(trans);
+        System.out.println("Ноды:");
+        System.out.println(nodes);
     }
 
     public Node get(Node n, String label){
         for (Transition tr: trans){
-            if (tr.from == n && tr.label.equals(label)){
+            if (tr.from.equals(n) && tr.label.equals(label)){
                 return tr.to.get(0);
             }
         }
@@ -470,6 +484,12 @@ class Tokenizer{
                 terminal = !(b);
                 t.append(c);
             }
+            else{
+                if (t.length()!=0){
+                    output.add(new Token(terminal, t.toString()));
+                    t = new StringBuilder();
+                }
+            }
         }
         if (t.length() != 0){
             output.add(new Token(terminal, t.toString()));
@@ -481,12 +501,8 @@ class Tokenizer{
 /*
 To test it:
 S ::= A;
-A ::= E
-A ::= +E
-A ::= A+E
-A ::= A*E
-E ::= id
-E ::= (A)
+A ::= E | +E | A+E | A*E
+E ::= id | (A)
 exit
 */
 class Main{
@@ -495,7 +511,7 @@ class Main{
     public static void main(String[] args){
         Scanner sc = new Scanner(System.in);
         LinkedList<String> names = new LinkedList<>();
-        LinkedList<LinkedList<Token>> temporal = new LinkedList<>(); // Храним для последующего развёртывания
+        LinkedList<LinkedList<Token>> tokens = new LinkedList<>(); // Храним для последующего развёртывания
         while (sc.hasNextLine()){
             String[] temp = sc.nextLine().split(" ::= ");
             if (temp[0].equals("exit")){
@@ -504,31 +520,64 @@ class Main{
             if (!names.contains(temp[0])){
                 names.add(temp[0]);
             }
-            temporal.add(Tokenizer.tokenize(temp[1]));
-            for (Token i: temporal.getLast()){ // Исследуем правую часть
-                if (!i.terminal && !names.contains(i.name)){ // Если ещё не встречали символ справа
-                    names.add(i.name);
+            int first = 0;
+            LinkedList<Token> tmp = Tokenizer.tokenize(temp[1]);
+            for (int i=0;i<tmp.size();i++){
+                if (tmp.get(i).name.equals("|")){
+                    tokens.add(new LinkedList<>());
+                    tokens.getLast().addAll(tmp.subList(first, i));
+                    System.out.println(tmp.subList(first, i));
+                    first = i+1;
                 }
+                else{
+                    if (!tmp.get(i).terminal && !names.contains(tmp.get(i).name)){ // Если ещё не встречали символ справа
+                        names.add(tmp.get(i).name);
+                    }
+                }
+            }
+            if (first!=tmp.size()-1){
+                tokens.add(new LinkedList<>());
+                tokens.getLast().addAll(tmp.subList(first, tmp.size()));
+                System.out.println(tmp.subList(first, tmp.size()));
             }
         }
         nodes = new LinkedList<>();
         trans = new LinkedList<>();
         String label = "";
-        for (int i=0;i<temporal.size();i++){
+        for (int i=0;i<tokens.size();i++){
             label = "";
             int cnt = 0;
-            for (int j=0;j<temporal.get(i).size();j++){
-                if (temporal.get(i).get(j).terminal){
-                    label = temporal.get(i).get(j).name;
-                }
-                else{
-                    trans.add(new Transition(label, new Node(valueOf(cnt) + "," + valueOf(i)), new Node(valueOf(++cnt) + "," + valueOf(i))));
+            for (int j=0;j<tokens.get(i).size();j++){
+
+                // нашим лейблом будет имя текущего токена, переход из позиции с номером i в i+1
+                trans.add(new Transition(tokens.get(i).get(j).name, new Node(valueOf(j) + "," + valueOf(i)), new Node(valueOf(j+1) + "," + valueOf(i))));
+                if (!tokens.get(i).get(j).terminal){
+                    // TODO Если текущий токен был нетерминальным, то нужно искать и переходы с ним связанные
                 }
             }
         }
+
+        // Заполняем список нод по списку переходов
         for (Transition t: trans){
-            nodes.add(t.from);
-            nodes.addAll(t.to);
+            boolean In1 = false, In2 = false;
+            for (Node n: nodes){
+                if (n.name.equals(t.from.name)){
+                    In1 = true;
+                }
+                else if (n.name.equals(t.to.get(0).name)){
+                    In2 = true;
+                }
+                if (In1  && In2){
+                    break;
+                }
+            }
+            if (!In1){
+                nodes.add(t.from);
+            }
+            if (!In2){
+                nodes.addAll(t.to);
+            }
+
         }
         System.out.println(trans);
         System.out.println(nodes);
