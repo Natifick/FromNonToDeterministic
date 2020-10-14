@@ -9,7 +9,7 @@ S ::= A;
 A ::= E | +E | A+E | A*E
 E ::= id | (A)
 over
-n
+y
 
 */
 
@@ -21,6 +21,18 @@ class Main{
     static LinkedList<Node> nodes;
     static LinkedList<Transition> trans;
     public static void main(String[] args){
+        LinkedList<String> firsta, second;
+        firsta = new LinkedList<>();
+        second = new LinkedList<>();
+        firsta.add("1");
+        firsta.add("3");
+        firsta.add("2");
+        second.add("1");
+        second.add("2");
+        second.add("3");
+        System.out.println(firsta.equals(second));
+
+
         Scanner sc = new Scanner(System.in);
         LinkedList<String> names = new LinkedList<>();
         LinkedList<LinkedList<Token>> tokens = new LinkedList<>(); // Храним для последующего развёртывания

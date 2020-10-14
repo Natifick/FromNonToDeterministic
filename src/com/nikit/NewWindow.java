@@ -54,6 +54,7 @@ class NewWindow extends JFrame {
         }
 
         for (int i=1;i<rows;i++){
+            // TODO добавить все невошедшие в список ноды (в колонке слева, они там пустыми полями остаются)
             for (int j=2;j<cols;j++){
                 if (flds[i*cols+j]==null){
                     flds[i*cols+j] = new JLabel();

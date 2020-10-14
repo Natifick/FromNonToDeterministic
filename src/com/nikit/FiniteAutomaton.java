@@ -145,6 +145,8 @@ class FiniteAutomaton{
     void ToDetermined(){
         // переиспользуем переменную, на самом деле она будет нужна позднее
         LinkedList<Node> newNodes;
+        // Сразу фиктивно добвляем в индекс 0 для первой ноды
+        nodes.get(0).idx.addFirst(0);
         // проходимся по всем нодам и приписываем к ним индексы (в последний столбец в тетради)
         for (Node value : nodes) {
             if (value.idx.isEmpty()) {
@@ -157,7 +159,6 @@ class FiniteAutomaton{
         LinkedList<Transition> newTrans = new LinkedList<>();
         newNodes = new LinkedList<>();// Обнуляем переменную
 
-        nodes.get(0).idx.addFirst(0);
         System.out.println("Переходы после индексации (нулевой добавляется фиктивно):");
         System.out.println(trans);
         System.out.println("Ноды после индексации:");
@@ -272,6 +273,8 @@ class FiniteAutomaton{
         System.out.println("Ноды без вычеркнутых лишних:");
         System.out.println(newNodes);
 
+
+
         for (Node newNode : newNodes) {
             // Пытаемся также заменить такую же ноду в переходах на эту ноду (создаём ссылки)
             for (Transition t : newTrans) {
@@ -291,27 +294,16 @@ class FiniteAutomaton{
             newNode.idx = new MyList<>(); // Сразу обнуляем индекс
         }
 
+        for (Node n: newNodes){
+            n.idx = new MyList<>();
+        }
+
         // Убираем одинаковые строки
-        for (int t1=0;t1<newTrans.size();t1++){
-            for (int t2=0;t2<newTrans.size();t2++){
-                // Если переходы совпадают по всем параметрам, то записываем это в ихиндексы
-                if (newTrans.get(t1).from.fin == newTrans.get(t2).from.fin &&
-                        newTrans.get(t1).to.equals(newTrans.get(t2).to) &&
-                        t1!=t2){
-                    // Для первой ноды
-                    if (!newTrans.get(t1).from.idx.contains(t2)){
-                        newTrans.get(t1).from.idx.add(t2);
-                    }
-                    if (!newTrans.get(t1).from.idx.contains(t1)){
-                        newTrans.get(t1).from.idx.add(t1);
-                    }
-                    // Для второй ноды
-                    if (!newTrans.get(t1).from.idx.contains(t2)){
-                        newTrans.get(t1).from.idx.add(t2);
-                    }
-                    if (!newTrans.get(t1).from.idx.contains(t1)){
-                        newTrans.get(t1).from.idx.add(t1);
-                    }
+        for (Node newNode : newNodes) {
+            for (Transition newTran : newTrans) {
+                if (newTran.from.equals(newNode) && // Если переход совершён из этой ноды
+                        !newNode.idx.contains(newNodes.indexOf(newTran.to.getFirst()))) { // Если текущий индекс ещё не был добавлен
+                    newNode.idx.add(newNodes.indexOf(newTran.to.getFirst())); // То добавляем индекс в idx
                 }
             }
         }
@@ -324,8 +316,10 @@ class FiniteAutomaton{
         for (int i=0;i<newNodes.size();i++){
             for (int j=i+1;j<newNodes.size();j++){
                 // Если ноды содержат одинаковые переходы
-                if (newNodes.get(i).idx.containsAll(newNodes.get(j).idx) &&
-                        newNodes.get(j).idx.containsAll(newNodes.get(i).idx) && newNodes.get(j).fin == newNodes.get(i).fin){
+                if (newNodes.get(i).idx.containsAll(newNodes.get(j).idx) && // Если в индексы обеих нод полностью совпадают,
+                        newNodes.get(j).idx.containsAll(newNodes.get(i).idx) && newNodes.get(j).fin == newNodes.get(i).fin && // и финальность совпадает
+                        !newNodes.get(i).idx.isEmpty() && !newNodes.get(j).idx.isEmpty()){ // А также индексы не пустые
+                    // То одну из них можно зачеркнуть
                     for (int t=0;t<newTrans.size();t++){
                         // То все переходы из этой ноды мы просто удаляем
                         if (newTrans.get(t).from == newNodes.get(j)){
