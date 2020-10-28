@@ -1,27 +1,29 @@
 package com.nikit;
 
+import java.util.Enumeration;
+
 /**
- * В моём решении автомат - это граф, поэтому состояния в нём - ноды
+ * В моём решении автомат - это граф, поэтому состояния в нём - вершины графа
  */
 class Node implements Cloneable{
-    boolean fin;
+    String flag;
     String name;
     MyList<Integer> idx;
 
-    public Node(boolean fin, String name) {
-        this.fin = fin;
+    public Node(String fl, String name) {
+        flag = fl;
         this.name = name;
         idx = new MyList<>();
     }
     public Node(String name){
-        this.fin = false;
+        this.flag = "0";
         this.name = name;
         idx = new MyList<>();
     }
 
     @Override
     public String toString() {
-        return "\n\tNode={fin " + fin + ", name=" + name + ", idx=" + idx + "}";
+        return "\n\tNode={fin " + flag + ", name=" + name + ", idx=" + idx + "}";
     }
 
     public Node clone(){

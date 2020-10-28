@@ -18,9 +18,6 @@ class Token{
 
     @Override
     public String toString() {
-        return "Token{" +
-                "terminal=" + terminal +
-                ", name='" + name + '\'' +
-                '}';
+        return "(terminal=" + terminal + " name='" + name + "')";
     }
 }

@@ -4,37 +4,49 @@ import java.util.*;
 import static java.lang.String.valueOf;
 
 /*
-To test it:
+Тестовые входные значения:
++
+*
+(
+)
+;
+over
 S ::= A;
-A ::= E | +E | A+E | A*E
-E ::= id | (A)
+A ::= E|+E|A+E|A*E
+E ::= id|(A)
 over
 y
+id+(id*id);
 
 */
 
 /**
- * главный класс, который принимает на вход LR грамматику в форме Бекуса-Науера
+ * главный класс, который принимает на вход LR грамматику в форме Бекуса-Науэра
  * И составляет конечный автомат по ней
  */
 class Main{
     static LinkedList<Node> nodes;
     static LinkedList<Transition> trans;
     public static void main(String[] args){
-        LinkedList<String> firsta, second;
-        firsta = new LinkedList<>();
-        second = new LinkedList<>();
-        firsta.add("1");
-        firsta.add("3");
-        firsta.add("2");
-        second.add("1");
-        second.add("2");
-        second.add("3");
-        System.out.println(firsta.equals(second));
-
-
         Scanner sc = new Scanner(System.in);
+        System.out.println("Введите все терминальные символы, для завершения введите 'over'");
         LinkedList<String> names = new LinkedList<>();
+        names.add(" ::= ");
+        names.add("|");
+        String name;
+        // Записывем терминальные символы
+        while(sc.hasNextLine()){
+            name = sc.nextLine();
+            if (!name.equals("over")) {
+                names.add(name);
+            }
+            else{
+                break;
+            }
+        }
+        Tokenizer.terminals = names;
+        names = new LinkedList<>();
+        System.out.println("Введите построчно LR грамматику в формате [нетерминал ::= строка]\nДля завершения введите over");
         LinkedList<LinkedList<Token>> tokens = new LinkedList<>(); // Храним для последующего развёртывания
         while (sc.hasNextLine()){
             String[] temp = sc.nextLine().split(" ::= ");
@@ -68,12 +80,18 @@ class Main{
                 System.out.println(tmp.subList(first, tmp.size()));
             }
         }
+        System.out.println(tokens);
         nodes = new LinkedList<>();
         trans = new LinkedList<>();
         for (int i=0;i<tokens.size();i++){
             for (int j=1;j<tokens.get(i).size();j++){
                 // нашим лейблом будет имя текущего токена, переход из позиции с номером j в j+1
-                trans.add(new Transition(tokens.get(i).get(j).name, new Node(valueOf(j-1) + "," + valueOf(i)), new Node(valueOf(j) + "," + valueOf(i))));
+                if (j==tokens.get(i).size()-1){
+                    trans.add(new Transition(tokens.get(i).get(j).name, new Node(valueOf(j-1) + "," + valueOf(i)), new Node(tokens.get(i).get(0).name + ","+(tokens.get(i).size()-1), valueOf(j) + "," + valueOf(i))));
+                }
+                else{
+                    trans.add(new Transition(tokens.get(i).get(j).name, new Node(valueOf(j-1) + "," + valueOf(i)), new Node(valueOf(j) + "," + valueOf(i))));
+                }
                 if (!tokens.get(i).get(j).terminal){
                     for (int tok =0;tok<tokens.size();tok++){
                         // проходимся по всем "уравнениям"
@@ -111,18 +129,17 @@ class Main{
         }
         System.out.println(trans);
         System.out.println(nodes);
-
-        NewWindow f = new NewWindow();
+        FiniteAutomaton fa = new FiniteAutomaton(nodes, trans);
+        (new NewWindow()).print_automaton(fa);
 
         System.out.println("Детерминировать автомат?[y/n]");
         if (sc.nextLine().equals("y")){
-            FiniteAutomaton fa = new FiniteAutomaton(nodes, trans);
             fa.ToDetermined();
-            f.print_automaton(fa);
+            (new NewWindow()).print_automaton(fa);
         }
-        else{
-            f.print_automaton(new FiniteAutomaton(nodes, trans));
-        }
+        System.out.println("Введите строку, которую необходимо разобрать по заданной грамматике:");
+
+        fa.parseString(sc.nextLine(), tokens.getFirst().getFirst().name);
     }
 }
 

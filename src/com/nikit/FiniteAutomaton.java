@@ -2,7 +2,9 @@ package com.nikit;
 
 import java.util.HashSet;
 import java.util.LinkedList;
+import java.util.Stack;
 
+import static java.lang.Integer.parseInt;
 import static java.lang.String.valueOf;
 
 class FiniteAutomaton{
@@ -49,6 +51,7 @@ class FiniteAutomaton{
         System.out.println(nodes);
     }
 
+    // По ноде и метке перехода получаем новую ноду
     public Node get(Node n, String label){
         for (Transition tr: trans){
             if (tr.from.equals(n) && tr.label.equals(label)){
@@ -56,6 +59,23 @@ class FiniteAutomaton{
             }
         }
         return null;
+    }
+
+    public Node get(String n, String label){
+        Node node = null;
+        for (int i=0;i<nodes.size();i++){
+            if (nodes.get(i).name.equals(n)){
+                node = nodes.get(i);
+                break;
+            }
+        }
+        boolean fl = true;
+        for (Transition tr: trans){
+            if (tr.from.equals(node)){
+                fl = false;
+            }
+        }
+        return get(node, label);
     }
 
     public void Minimize(){
@@ -79,15 +99,14 @@ class FiniteAutomaton{
             }
         }
 
-
         for (Transition t: trans){
-            t.from.idx.set(labels.indexOf(t.label), t.to.get(0).fin?1:0);
+            t.from.idx.set(labels.indexOf(t.label), t.to.get(0).flag.equals("1") ?1:0);
         }
 
         for (int i=0;i<nodes.size();i++){
             for (int j=i+1;j<nodes.size();j++){
                 // Если ноды соеражт одинаковые переходы
-                if (nodes.get(i).idx.equals(nodes.get(j).idx) && nodes.get(i).fin == nodes.get(j).fin){
+                if (nodes.get(i).idx.equals(nodes.get(j).idx) && nodes.get(i).flag == nodes.get(j).flag){
                     for (int t=0;t<trans.size();t++){
                         // То все переходы из этой ноды мы просто удаляем
                         if (trans.get(t).from == nodes.get(j)){
@@ -119,6 +138,7 @@ class FiniteAutomaton{
     }
 
 
+    /** Получение индекса для ноды */
     MyList<Integer> get_idx(Node node, LinkedList<Node> t){
         t.add(node);
         HashSet<Integer> temp = new HashSet<>();
@@ -145,7 +165,7 @@ class FiniteAutomaton{
     void ToDetermined(){
         // переиспользуем переменную, на самом деле она будет нужна позднее
         LinkedList<Node> newNodes;
-        // Сразу фиктивно добвляем в индекс 0 для первой ноды
+        // Сразу фиктивно добавляем в индекс 0 для первой ноды
         nodes.get(0).idx.addFirst(0);
         // проходимся по всем нодам и приписываем к ним индексы (в последний столбец в тетради)
         for (Node value : nodes) {
@@ -258,15 +278,17 @@ class FiniteAutomaton{
             }
         }
 
+        // Рассматриваем, является ли вершина конечной
         for (int i=0;i<newNodes.size();i++){
             newNodes.get(i).name = valueOf(i); // Присваиваем им равное индексу
             for (Node node : nodes) { // Финальная ли эта нода?
                 // Нода финальна, если её индекс содержит индекс из финальной ноды
-                if (node.fin && newNodes.get(i).idx.containsOne(node.idx)) {
-                    newNodes.get(i).fin = true;
+                if (!node.flag.equals("0") && newNodes.get(i).idx.containsOne(node.idx)) {
+                    newNodes.get(i).flag = node.flag;
                 }
             }
         }
+
 
         System.out.println("Переходы без вычеркнутых лишних строк:");
         System.out.println(newTrans);
@@ -308,16 +330,16 @@ class FiniteAutomaton{
             }
         }
 
-        System.out.println("Переходы прямо перед вычёркиванием:");
+        System.out.println("Переходы прямо перед вычёркиванием лишниих:");
         System.out.println(newTrans);
-        System.out.println("Ноды прямо перед вычёркиванием:");
+        System.out.println("Ноды прямо перед вычёркиванием лишних:");
         System.out.println(newNodes);
 
         for (int i=0;i<newNodes.size();i++){
             for (int j=i+1;j<newNodes.size();j++){
                 // Если ноды содержат одинаковые переходы
                 if (newNodes.get(i).idx.containsAll(newNodes.get(j).idx) && // Если в индексы обеих нод полностью совпадают,
-                        newNodes.get(j).idx.containsAll(newNodes.get(i).idx) && newNodes.get(j).fin == newNodes.get(i).fin && // и финальность совпадает
+                        newNodes.get(j).idx.containsAll(newNodes.get(i).idx) && newNodes.get(j).flag == newNodes.get(i).flag && // и финальность совпадает
                         !newNodes.get(i).idx.isEmpty() && !newNodes.get(j).idx.isEmpty()){ // А также индексы не пустые
                     // То одну из них можно зачеркнуть
                     for (int t=0;t<newTrans.size();t++){
@@ -342,10 +364,91 @@ class FiniteAutomaton{
         nodes = newNodes;
         trans = newTrans;
 
+        // Заносим все возможные метки переходов, чтобы получить переходы в ошибку
+        // Если такие переходы вообще будут
+        LinkedList<String> labels = new LinkedList<>();
+        for (Transition tr: trans){
+            if (!labels.contains(tr.label)){
+                labels.add(tr.label);
+            }
+        }
+        // Сразу вносим пустой символ, если что потом удалим
+        nodes.add(new Node("$", "Error"));
+        boolean ShouldWeKeepZero = false;
+        for (Node n: nodes){
+            if (n == nodes.getLast()){
+                break;
+            }
+            // Иначе все пустые клетки ведут к ошибке
+            for (String l: labels){
+                fl = false;
+                for (Transition tr: trans){
+                    if (tr.from==n && tr.label.equals(l)){
+                        fl = true;
+                    }
+                }
+                if (!fl){
+                    ShouldWeKeepZero = true;
+                    trans.add(!n.flag.equals("0") ?new Transition(l, n, newNodes.getFirst()):new Transition(l, n, newNodes.getLast()));
+                }
+            }
+        }
+        // Если к ошибке нельзя прийти, то удаляем эту вершину
+        if (!ShouldWeKeepZero){
+            nodes.removeLast();
+        }
+
         System.out.println("Переходы в конце:");
         System.out.println(trans);
         System.out.println("Ноды в конце:");
         System.out.println(nodes);
         //Minimize();
+    }
+
+    boolean parseString(String str, String beginner){
+        LinkedList<Token> tokens = Tokenizer.tokenize(str);
+        Stack<String> SS = new Stack<>();
+        Stack<Token> SC = new Stack<>();
+
+        SS.push(nodes.getFirst().name);
+        SC.push(tokens.removeFirst());
+        String s;
+        Token x;
+        Node t;
+        int size;
+        while(true){
+            s = SS.peek();
+            x = SC.peek();
+            if (x.name.equals(beginner)){
+                System.out.println("обработка завершена успешно!");
+                break;
+            }
+            t = get(s, x.name);
+
+            if (t.flag.equals("$")){
+                System.out.println("Возникла ошибка");
+                break;
+            }
+            if (!t.flag.equals("0")){
+                size = parseInt(t.flag.substring(t.flag.indexOf(',')+1));
+                for (int i=0;i<size; i++){
+                    SC.pop();
+                    if (i!=size-1){
+                        SS.pop();
+                    }
+                }
+                SC.push(new Token(t.flag.substring(0, t.flag.indexOf(","))));
+            }
+            else{
+                SS.push(t.name);
+                if (tokens.size()!=0){
+                    SC.push(tokens.removeFirst());
+                }
+            }
+            System.out.println("Итерация:");
+            System.out.println("SS: " + SS + "\nSC: " + SC);
+            System.out.println(s + " " + x.name + t);
+        }
+        return true;
     }
 }

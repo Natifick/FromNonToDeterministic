@@ -4,6 +4,8 @@ import javax.swing.*;
 import java.awt.*;
 import java.util.LinkedList;
 
+import static java.lang.String.valueOf;
+
 /**
  * После завершения действий над автоматом нужно его показать
  * Удобнее делать это в новом окне
@@ -37,11 +39,11 @@ class NewWindow extends JFrame {
             flds[i].setText("" + labels.get(i-2));
         }
         Node temp;
-
+        // Заполняем таблицу в JFrame
         for (Transition transition : tr) {
             int indx = nodes.indexOf(transition.from);
             flds[(indx+1)* cols].setText(transition.from.name);
-            flds[(indx+1)*cols + 1].setText(transition.from.fin ? "1" : "0");
+            flds[(indx+1)*cols + 1].setText(valueOf(transition.from.flag));
             for (Node t2 : transition.to) {
                 if (flds[(indx+1)*cols + labels.indexOf(transition.label)+2]==null){
                     flds[(indx+1)*cols + labels.indexOf(transition.label)+2] = new JLabel();
@@ -54,11 +56,14 @@ class NewWindow extends JFrame {
         }
 
         for (int i=1;i<rows;i++){
-            // TODO добавить все невошедшие в список ноды (в колонке слева, они там пустыми полями остаются)
+            if (flds[i*cols].getText().equals("")){
+                flds[i*cols].setText(nodes.get(i-1).name);
+                flds[i*cols+1].setText(valueOf(nodes.get(i-1).flag));
+            }
             for (int j=2;j<cols;j++){
                 if (flds[i*cols+j]==null){
                     flds[i*cols+j] = new JLabel();
-                    flds[i*cols+j].setText("");
+                    flds[i*cols+1].setText(labels.get(i-1));
                 }
             }
         }
