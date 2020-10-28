@@ -1,10 +1,18 @@
 package com.nikit;
+////////////////////////////////////////
+//Автор программы: Хорошавцев Никита  //
+////////////////////////////////////////
 
 import java.util.*;
 import static java.lang.String.valueOf;
 
 /*
 Тестовые входные значения:
+S
+A
+E
+id
+over
 +
 *
 (
@@ -29,11 +37,24 @@ class Main{
     static LinkedList<Transition> trans;
     public static void main(String[] args){
         Scanner sc = new Scanner(System.in);
-        System.out.println("Введите все терминальные символы, для завершения введите 'over'");
+        System.out.println("Введите все нетерминальные символы, для завершения введите 'over'");
         LinkedList<String> names = new LinkedList<>();
+        String name;
+        // Записывем нетерминальные символы
+        while(sc.hasNextLine()){
+            name = sc.nextLine();
+            if (!name.equals("over")) {
+                names.add(name);
+            }
+            else{
+                break;
+            }
+        }
+        Tokenizer.nonterminals = names;
+        names = new LinkedList<>();
         names.add(" ::= ");
         names.add("|");
-        String name;
+        System.out.println("Введите все терминальные символы, для завершения введите 'over'");
         // Записывем терминальные символы
         while(sc.hasNextLine()){
             name = sc.nextLine();

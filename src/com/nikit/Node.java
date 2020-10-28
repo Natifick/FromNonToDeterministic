@@ -1,6 +1,5 @@
 package com.nikit;
 
-import java.util.Enumeration;
 
 /**
  * В моём решении автомат - это граф, поэтому состояния в нём - вершины графа
