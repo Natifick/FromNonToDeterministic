@@ -425,7 +425,7 @@ class FiniteAutomaton{
             }
             t = get(s, x.name);
 
-            if (t.flag.equals("$")){
+            if (t == null || t.flag.equals("$")){
                 System.out.println("Возникла ошибка");
                 break;
             }

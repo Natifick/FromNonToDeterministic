@@ -4,7 +4,6 @@ package com.nikit;
 ////////////////////////////////////////
 
 import java.util.*;
-import static java.lang.String.valueOf;
 
 /*
 Тестовые входные значения:
@@ -36,37 +35,65 @@ class Main{
     static LinkedList<Node> nodes;
     static LinkedList<Transition> trans;
     public static void main(String[] args){
+        Tokenizer.terminals = new LinkedList<>(Arrays.asList("; * ** + - / % ( ) , == != > < <= >= = ! += -= /= *= %= || && { } [ ]".split(" ")));
+        Tokenizer.words = new LinkedList<>(Arrays.asList("if else do while for".split(" ")));
+        make_automaton();
+    }
+    /*
+Для теста удаления epsilon правил
+S ::= A B|C D
+A ::= aA|eps
+B ::= bBc|eps
+C ::= cC|eps
+D ::= aDb|eps
+over
+     */
+
+    static void remove_eps(LinkedList<LinkedList<Token>> tokens){
+        HashSet<String> X = new HashSet<>();
+        // Заполняем список epsilon переменных, X
+        for(int i=0;i<tokens.size();i++){
+            // Если с правой стороны стоит пустота (eps), то добавляем в список X
+            if (tokens.get(i).get(1).name.equals("eps")){
+                X.add(tokens.get(i).get(0).name);
+                tokens.remove(i);
+                i--;
+            }
+        }
+        System.out.println("Просто удалили все eps:");
+        System.out.println(tokens);
+        LinkedList<Token> temp;
+        // Теперь заменяем все упоминания переменной, которая может быть eps
+        int max_size = tokens.size();
+        for (String t: X){
+            for (int i=0;i<max_size;i++){
+                for (int j=1;j<tokens.get(i).size();j++){
+                    // Проходимся по каждому элементу из каждой строки
+                    if (tokens.get(i).get(j).name.equals(t)){
+                        // Если нашли, то добавляем 1
+                        temp = (LinkedList<Token>)tokens.get(i).clone();
+                        temp.remove(j);
+                        if (temp.size()==1){
+                            // Если в результате мы убрали всё, то лучше ничего не делать TODO
+                            // temp.addLast(new Token(true, "eps"));
+                        }
+                        else{
+                            tokens.addLast(temp);
+                        }
+                    }
+                }
+            }
+        }
+        System.out.println("Закончили разбирать eps-правила:");
+        System.out.println(tokens);
+    }
+
+    static void make_automaton(){
         Scanner sc = new Scanner(System.in);
-        System.out.println("Введите все нетерминальные символы, для завершения введите 'over'");
         LinkedList<String> names = new LinkedList<>();
-        String name;
-        // Записывем нетерминальные символы
-        while(sc.hasNextLine()){
-            name = sc.nextLine();
-            if (!name.equals("over")) {
-                names.add(name);
-            }
-            else{
-                break;
-            }
-        }
-        Tokenizer.nonterminals = names;
-        names = new LinkedList<>();
-        names.add(" ::= ");
-        names.add("|");
-        System.out.println("Введите все терминальные символы, для завершения введите 'over'");
-        // Записывем терминальные символы
-        while(sc.hasNextLine()){
-            name = sc.nextLine();
-            if (!name.equals("over")) {
-                names.add(name);
-            }
-            else{
-                break;
-            }
-        }
-        Tokenizer.terminals = names;
-        names = new LinkedList<>();
+        Tokenizer.terminals.add(" ::= ");
+        Tokenizer.terminals.add("|");
+        Tokenizer.terminals.add("eps");
         System.out.println("Введите построчно LR грамматику в формате [нетерминал ::= строка]\nДля завершения введите over");
         LinkedList<LinkedList<Token>> tokens = new LinkedList<>(); // Храним для последующего развёртывания
         while (sc.hasNextLine()){
@@ -94,13 +121,14 @@ class Main{
                     }
                 }
             }
-            if (first!=tmp.size()-1){
+            if (first!=tmp.size()){
                 tokens.add(new LinkedList<>());
                 tokens.getLast().add(current);
                 tokens.getLast().addAll(tmp.subList(first, tmp.size()));
                 System.out.println(tmp.subList(first, tmp.size()));
             }
         }
+        remove_eps(tokens);
         System.out.println(tokens);
         nodes = new LinkedList<>();
         trans = new LinkedList<>();
@@ -108,10 +136,10 @@ class Main{
             for (int j=1;j<tokens.get(i).size();j++){
                 // нашим лейблом будет имя текущего токена, переход из позиции с номером j в j+1
                 if (j==tokens.get(i).size()-1){
-                    trans.add(new Transition(tokens.get(i).get(j).name, new Node(valueOf(j-1) + "," + valueOf(i)), new Node(tokens.get(i).get(0).name + ","+(tokens.get(i).size()-1), valueOf(j) + "," + valueOf(i))));
+                    trans.add(new Transition(tokens.get(i).get(j).name, new Node(j-1 + "," + i), new Node(tokens.get(i).get(0).name + ","+(tokens.get(i).size()-1), j + "," + i)));
                 }
                 else{
-                    trans.add(new Transition(tokens.get(i).get(j).name, new Node(valueOf(j-1) + "," + valueOf(i)), new Node(valueOf(j) + "," + valueOf(i))));
+                    trans.add(new Transition(tokens.get(i).get(j).name, new Node(j-1 + "," + i), new Node(j + "," + i)));
                 }
                 if (!tokens.get(i).get(j).terminal){
                     for (int tok =0;tok<tokens.size();tok++){
@@ -120,7 +148,7 @@ class Main{
                         if (tokens.get(tok).getFirst().name.equals(tokens.get(i).get(j).name) && tokens.get(tok) != tokens.get(i)){
                             // имена равны, то есть из S ::= *A; можно пустым переходом попасть в A ::= E;
                             // Если я верно понял, то мы всегда приходим в ноду (0,y), то есть первая координата 0
-                            trans.add(new Transition("", new Node(valueOf(j-1) + "," + valueOf(i)), new Node("0," + valueOf(tok))));
+                            trans.add(new Transition("", new Node(j-1 + "," + i), new Node("0," + tok)));
                         }
                     }
                 }
