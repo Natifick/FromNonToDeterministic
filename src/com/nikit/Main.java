@@ -10,6 +10,20 @@ import static java.lang.String.valueOf;
 Тестовые входные значения:
 S
 A
+Q
+over
+a
+b
+T
+over
+S ::= aQ|bT
+A ::= a|aS|bTT
+Q ::= b|bS|aQQ
+over
+
+
+S
+A
 E
 id
 over
@@ -23,7 +37,6 @@ S ::= A;
 A ::= E|+E|A+E|A*E
 E ::= id|(A)
 over
-y
 id+(id*id);
 
 */
@@ -151,205 +164,10 @@ class Main{
         System.out.println(trans);
         System.out.println(nodes);
         FiniteAutomaton fa = new FiniteAutomaton(nodes, trans);
-        (new NewWindow()).print_automaton(fa);
-
-        System.out.println("Детерминировать автомат?[y/n]");
-        if (sc.nextLine().equals("y")){
-            fa.ToDetermined();
-            (new NewWindow()).print_automaton(fa);
+        fa.ToDetermined();
+        while(true){
+            System.out.println("Введите строку, которую необходимо разобрать по заданной грамматике:");
+            fa.parseString(sc.nextLine(), tokens.getFirst().getFirst().name);
         }
-        System.out.println("Введите строку, которую необходимо разобрать по заданной грамматике:");
-
-        fa.parseString(sc.nextLine(), tokens.getFirst().getFirst().name);
     }
 }
-
-
-/*
-class Main extends JFrame {
-    JPanel top, middle1, middle2, bottom;
-    JButton confirm1, determ, minim;
-    JFormattedTextField rows, cols;
-    int r, c;
-    JPanel[] pans;
-
-    JLabel info;
-    JFormattedTextField[] flds;
-
-    public static void main(String[] args){
-        new Main();
-        System.out.println((char)('A'+2));
-    }
-
-    void FillTheTable(int rows, int cols){
-        setSize(600, 700);
-        info.setVisible(true);
-        flds = new JFormattedTextField[(rows+1)*(cols+2)];
-
-        bottom.setLayout(new GridLayout(rows+1, cols+3));
-        pans = new JPanel[(rows+1)*(cols+3)];
-        for (int i=0;i<pans.length;i++){
-            pans[i] = new JPanel();
-        }
-        pans[0].add(new JLabel("Q"));
-        pans[1].add(new JLabel("F"));
-        pans[cols+2].add(new Label("eps"));
-        for (int i=2;i<cols+2;i++){
-            pans[i].add(new JLabel("" +(i-2)));
-        }
-        for (int i=1;i<rows+1;i++){
-            pans[i*(cols+3)].add(new JLabel("" + (i-1)));
-            for (int j=1;j<cols+3;j++){
-                flds[(i-1)*(cols+2)+j-1] = new JFormattedTextField();
-                flds[(i-1)*(cols+2)+j-1].setPreferredSize(new Dimension(50, 20));
-                pans[i*(cols+3)+j].add(flds[(i-1)*(cols+2)+j-1]);
-            }
-        }
-        for (JPanel pan : pans) {
-            bottom.add(pan);
-        }
-        add(bottom);
-    }
-
-    public Main(){
-        setLayout(new BoxLayout(getContentPane(), BoxLayout.PAGE_AXIS));
-        setSize(500, 900);
-        setDefaultCloseOperation(EXIT_ON_CLOSE);
-
-        top = new JPanel();
-        top.setLayout(new GridLayout(2, 2));
-        rows = new JFormattedTextField();
-        cols = new JFormattedTextField();
-        JLabel tmp = new JLabel("Число состояний:");
-        tmp.setHorizontalAlignment(JLabel.CENTER);
-        top.add(tmp);
-        tmp = new JLabel("Число меток переходов:");
-        tmp.setHorizontalAlignment(JLabel.CENTER);
-        top.add(tmp);
-        top.add(new JLabel());
-        top.add(rows);
-        top.add(cols);
-        top.setPreferredSize(new Dimension(500, 200));
-        add(top);
-
-        middle1 = new JPanel();
-        confirm1 = new JButton();
-        confirm1.setText("Подтвердить");
-        confirm1.setHorizontalAlignment(JButton.CENTER);
-        confirm1.setVerticalAlignment(JButton.CENTER);
-        confirm1.addActionListener(e -> {
-            if (!rows.getText().equals("") && !cols.getText().equals("")){
-                r = Integer.parseInt(rows.getText());
-                c = Integer.parseInt(cols.getText());
-                middle1.setVisible(false);
-                middle1.setEnabled(false);
-                minim.setVisible(true);
-                minim.setEnabled(true);
-                determ.setVisible(true);
-                determ.setEnabled(true);
-                FillTheTable(r, c);
-                remove(top);
-                System.out.println("Well done");
-            }
-        });
-        middle1.add(confirm1);
-        middle1.setPreferredSize(new Dimension(500, 100));
-        add(middle1);
-
-        middle2 = new JPanel();
-        info = new JLabel("Если несколько переходов с одной меткой, вводите их через пробел");
-        info.setVisible(false);
-        middle2.add(info);
-        determ = new JButton();
-        determ.setText("Детерминировать");
-        determ.setHorizontalAlignment(JButton.CENTER);
-        determ.setVerticalAlignment(JButton.CENTER);
-        determ.setVisible(false);
-        determ.setEnabled(false);
-        determ.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                LinkedList<Node> n = new LinkedList<>();
-                Node temp;
-                for (int i=0;i<r;i++){
-                    temp = new Node(valueOf(i));
-                    temp.fin = flds[(c+2)*i].getText().equals("1");
-                    System.out.println();
-                    n.add(temp);
-                }
-                LinkedList<Transition> tr = new LinkedList<>();
-                String t;
-                for (int i=0;i<r;i++) {
-                    for (int j = 1; j < c+2; j++) {
-                        t = flds[i * (c + 2) + j].getText();
-                        if (!t.equals("")){
-                            for (String s : t.split(" ")) {
-                                if (j!=c+1){
-                                    tr.add(new Transition(valueOf((char)('A'+j-1)), n.get(i), n.get(Integer.parseInt(s))));
-                                }
-                                else{
-                                    tr.add(new Transition("", n.get(i), n.get(Integer.parseInt(s))));
-                                }
-                            }
-                        }
-                    }
-                }
-
-                FiniteAutomation FA = new FiniteAutomation(n, tr);
-                FA.ToDetermined();
-                NewWindow fr = new NewWindow();
-                fr.print_automaton(FA);
-            }
-        });
-        middle2.add(determ);
-
-        minim = new JButton();
-        minim.setText("Минимизировать");
-        minim.setHorizontalAlignment(JButton.CENTER);
-        minim.setVerticalAlignment(JButton.CENTER);
-        minim.setVisible(false);
-        minim.setEnabled(false);
-        minim.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                LinkedList<Node> n = new LinkedList<>();
-                Node temp;
-                for (int i=0;i<r;i++){
-                    temp = new Node(valueOf(i));
-                    temp.fin = flds[(c+2)*i].getText().equals("1");
-                    System.out.println();
-                    n.add(temp);
-                }
-                LinkedList<Transition> tr = new LinkedList<>();
-                String t;
-                for (int i=0;i<r;i++) {
-                    for (int j = 1; j < c+2; j++) {
-                        t = flds[i * (c + 2) + j].getText();
-                        if (!t.equals("")){
-                            for (String s : t.split(" ")) {
-                                if (j!=c+1){
-                                    tr.add(new Transition(valueOf(j-1), n.get(i), n.get(Integer.parseInt(s))));
-                                }
-                                else{
-                                    tr.add(new Transition("", n.get(i), n.get(Integer.parseInt(s))));
-                                }
-                            }
-                        }
-                    }
-                }
-                FiniteAutomation FA = new FiniteAutomation(n, tr);
-                FA.Minimize();
-                NewWindow fr = new NewWindow();
-                fr.print_automaton(FA);
-            }
-        });
-        middle2.add(minim);
-        middle2.setPreferredSize(new Dimension(600, 100));
-        add(middle2);
-        bottom = new JPanel();
-        bottom.setPreferredSize(new Dimension(600, 600));
-        setVisible(true);
-    }
-}
- */
-
